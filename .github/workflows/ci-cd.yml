@@ -1,0 +1,84 @@
+# BUILD pipeline. Runs on every push to the branches below.
+#
+#   feature/**, sprint-*  -> test + build image.          Deploy MANUALLY (Actions > Deploy > Run workflow)
+#   dev                   -> test + build image + AUTO deploy to dev
+#   prod                  -> test + build image.          Deploy MANUALLY to prod (needs approval)
+#
+# One-time AWS/GitHub setup: docs/AWS_SETUP.md. How to deploy: docs/CICD.md.
+name: CI/CD
+
+on:
+  push:
+    branches: [dev, prod, "feature/**", "sprint-*"]
+
+# A newer push to the same branch cancels the older run still in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write # lets GitHub prove its identity to AWS (OIDC), so we store no AWS keys
+
+jobs:
+  test-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: server/requirements*.txt }
+      - run: pip install -r server/requirements-dev.txt
+      - run: python -m pytest
+        working-directory: server
+
+  test-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: client/package-lock.json }
+      - run: npm ci
+        working-directory: client
+      - run: npm test
+        working-directory: client
+      # Proves the production bundle builds. (The deploy workflow rebuilds it per environment.)
+      - run: npm run build
+        working-directory: client
+        env: { CLIENT_ENV: dev }
+
+  # Builds the API Docker image and stores it in AWS ECR, tagged with the git commit.
+  # The SAME image is later deployed to dev or prod (config differs via APP_ENV, not via the image).
+  build-image:
+    needs: [test-server, test-client]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_BUILD_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: . # repo root, so VERSION and brand.config.json are included
+          file: server/Dockerfile
+          push: true
+          provenance: false # Lambda rejects images that carry extra attestation manifests
+          build-args: BUILD_SHA=${{ github.sha }}
+          tags: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Only the dev branch deploys automatically.
+  deploy-dev:
+    if: github.ref == 'refs/heads/dev'
+    needs: build-image
+    permissions:
+      contents: write # the called workflow tags releases; a callee can't get more rights than its caller
+      id-token: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: dev
+    secrets: inherit

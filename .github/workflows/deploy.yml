@@ -1,0 +1,121 @@
+# DEPLOY pipeline. Two ways to start it:
+#   1. Automatically: ci-cd.yml calls it after a push to `dev`.
+#   2. Manually: GitHub > Actions > "Deploy" > Run workflow.
+#        - "Use workflow from" = the branch you want to deploy (e.g. feature/payment-reminders)
+#        - environment = dev or prod
+#      The commit must already be BUILT (the CI/CD workflow ran for it).
+#
+# Safety rule: only the `prod` branch can be deployed to prod.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [dev, prod]
+        default: dev
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+
+permissions:
+  contents: write # only used to create the vX.Y.Z git tag after a prod deploy
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Settings for each environment (role, function names...) live in GitHub > Settings > Environments.
+    # Add "required reviewers" to the prod environment to get an approval click before prod deploys.
+    environment: ${{ inputs.environment }}
+    concurrency: deploy-${{ inputs.environment }} # never two deploys to the same environment at once
+    steps:
+      - name: Only the prod branch may go to prod
+        if: inputs.environment == 'prod' && github.ref != 'refs/heads/prod'
+        run: |
+          echo "::error::Prod deploys must run from the 'prod' branch (you chose ${{ github.ref_name }}). Merge to prod first."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check this commit was built
+        run: |
+          aws ecr describe-images --repository-name "${{ vars.ECR_REPOSITORY }}" --image-ids imageTag=${{ github.sha }} >/dev/null \
+            || { echo "::error::No image for commit ${{ github.sha }}. Wait for the CI/CD workflow to finish for this commit, then retry."; exit 1; }
+
+      # ---- 1. API: point both Lambda functions at the new image ----
+      - name: Update API and migration functions
+        run: |
+          IMAGE="${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}"
+          for FN in "${{ vars.LAMBDA_FUNCTION_NAME }}" "${{ vars.MIGRATE_FUNCTION_NAME }}"; do
+            aws lambda update-function-code --function-name "$FN" --image-uri "$IMAGE" >/dev/null
+            aws lambda wait function-updated --function-name "$FN"
+            echo "Updated $FN"
+          done
+
+      # ---- 2. Database: run migrations BEFORE users hit the new code ----
+      - name: Run database migrations
+        run: |
+          aws lambda invoke --function-name "${{ vars.MIGRATE_FUNCTION_NAME }}" --cli-read-timeout 300 \
+            --query FunctionError --output text /tmp/migrate.json > /tmp/err.txt
+          cat /tmp/migrate.json; echo
+          if [ "$(cat /tmp/err.txt)" != "None" ]; then echo "::error::Migration failed"; exit 1; fi
+
+      # ---- 3. Website: build for THIS environment and upload to Amplify ----
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: client/package-lock.json }
+      - name: Build client
+        working-directory: client
+        run: npm ci && npm run build
+        env:
+          CLIENT_ENV: ${{ inputs.environment }}
+          BUILD_SHA: ${{ github.sha }}
+      - name: Upload to Amplify
+        run: |
+          cd client/dist && zip -qr ../../client.zip . && cd ../..
+          read JOB_ID UPLOAD_URL < <(aws amplify create-deployment --app-id "${{ vars.AMPLIFY_APP_ID }}" --branch-name "${{ vars.AMPLIFY_BRANCH }}" --query '[jobId,zipUploadUrl]' --output text)
+          curl -sSf -T client.zip "$UPLOAD_URL"
+          aws amplify start-deployment --app-id "${{ vars.AMPLIFY_APP_ID }}" --branch-name "${{ vars.AMPLIFY_BRANCH }}" --job-id "$JOB_ID" >/dev/null
+          for i in $(seq 1 30); do
+            STATUS=$(aws amplify get-job --app-id "${{ vars.AMPLIFY_APP_ID }}" --branch-name "${{ vars.AMPLIFY_BRANCH }}" --job-id "$JOB_ID" --query job.summary.status --output text)
+            echo "Amplify: $STATUS"
+            [ "$STATUS" = "SUCCEED" ] && exit 0
+            [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "CANCELLED" ] && { echo "::error::Amplify deploy $STATUS"; exit 1; }
+            sleep 10
+          done
+          echo "::error::Amplify deploy timed out"; exit 1
+
+      # ---- 4. Smoke test: is the new version really live? ----
+      - name: Smoke test
+        run: |
+          EXPECTED="${{ github.sha }}"
+          for i in $(seq 1 12); do
+            BODY=$(curl -fsS "${{ vars.API_URL }}/api/v1/health" || true)
+            echo "$BODY"
+            echo "$BODY" | grep -q "\"build\":\"$EXPECTED\"" && { echo "Live version matches this commit."; exit 0; }
+            sleep 5
+          done
+          echo "::error::Health check did not report build $EXPECTED"; exit 1
+
+      # ---- 5. Prod only: tag the release (version comes from the VERSION file) ----
+      - name: Tag release
+        if: inputs.environment == 'prod'
+        run: |
+          TAG="v$(cat VERSION)"
+          if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
+            echo "Tag $TAG already exists (did you forget to bump VERSION?)"
+          else
+            git tag -a "$TAG" -m "Release $TAG" && git push origin "$TAG"
+          fi

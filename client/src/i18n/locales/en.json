@@ -1,0 +1,70 @@
+{
+  "nav": { "dashboard": "Home", "invoices": "Invoices", "clients": "Clients", "settings": "Settings", "billing": "Plan" },
+  "status": { "draft": "Draft", "sent": "Sent", "overdue": "Overdue", "paid": "Paid", "cancelled": "Cancelled" },
+  "common": {
+    "loadFailed": "We couldn’t load this", "retry": "Try again", "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "previous": "Previous", "next": "Next", "edit": "Edit", "delete": "Delete", "cancel": "Cancel",
+    "save": "Save", "saveChanges": "Save changes", "remove": "Remove"
+  },
+  "auth": { "pitch": "Create professional invoices, send them by email or link, and see who has paid." },
+  "dashboard": {
+    "title": "Home", "setupPrompt": "Add your business name and tax details so they appear on your invoices.",
+    "setupAction": "Set up business", "outstanding": "Waiting to be paid", "overdue": "Overdue",
+    "overdueCount_one": "{{count}} invoice is late", "overdueCount_other": "{{count}} invoices are late",
+    "paidThisMonth": "Paid this month", "recent": "Recent invoices", "viewAll": "View all",
+    "noInvoices": "Your invoices will show up here."
+  },
+  "invoices": {
+    "title": "Invoices", "new": "New invoice", "all": "All", "search": "Search by client or number",
+    "emptyTitle": "No invoices yet", "emptyText": "Create your first invoice in under a minute.",
+    "createFirst": "Create invoice", "noMatches": "No invoices match this filter", "dueOn": "due {{date}}",
+    "invoice": "Invoice", "billedTo": "Billed to", "issued": "Issued", "due": "Due", "items": "Items",
+    "subtotal": "Subtotal", "discount": "Discount", "totalDue": "Total due", "howToPay": "How to pay", "notes": "Notes",
+    "send": "Send invoice", "sendByEmail": "Send by email", "markPaid": "Mark as paid", "markUnpaid": "Mark as unpaid",
+    "downloadPdf": "Download PDF", "copyLink": "Copy link", "duplicate": "Duplicate", "cancelInvoice": "Cancel invoice",
+    "confirmDelete": "Delete this draft? This can’t be undone.",
+    "confirmCancel": "Cancel this invoice? The client’s link will still work but it will show as cancelled.",
+    "sendTitle": "Send {{number}}", "sendTo": "Send to", "sendMessage": "Message (optional)",
+    "sendHint": "The PDF and a link to view the invoice online are included.",
+    "edit": "Edit {{number}}", "client": "Client", "selectClient": "Choose a client", "description": "Description",
+    "qty": "Qty", "rate": "Rate", "addItem": "Add item", "discountAmount": "Discount (amount)",
+    "notesHint": "Shown at the bottom of the invoice, e.g. thank-you or late-fee terms.",
+    "save": "Save invoice", "preview": "Preview",
+    "toast": {
+      "saved": "Invoice saved", "sent": "Invoice sent", "paid": "Marked as paid", "draft": "Moved back to draft",
+      "cancelled": "Invoice cancelled", "duplicated": "Invoice duplicated", "deleted": "Draft deleted", "linkCopied": "Link copied"
+    },
+    "errors": {
+      "client": "Choose a client.", "items": "Each item needs a description and a quantity above 0.",
+      "dueDate": "Due date can’t be before the issue date."
+    }
+  },
+  "clients": {
+    "title": "Clients", "new": "New client", "edit": "Edit client", "saved": "Client saved", "deleted": "Client deleted",
+    "name": "Name", "email": "Email", "phone": "Phone", "taxId": "Tax ID", "taxIdHint": "GSTIN in India, VAT number elsewhere. Optional.",
+    "address": "Address", "city": "City", "state": "State", "postalCode": "PIN / postal code",
+    "emptyTitle": "No clients yet", "emptyText": "Add the people and companies you bill.", "noContact": "No contact details",
+    "confirmDelete": "Delete {{name}}?"
+  },
+  "settings": {
+    "title": "Settings", "subtitle": "This information appears on every invoice.", "business": "Your business",
+    "name": "Business name", "email": "Email", "phone": "Phone", "address": "Address",
+    "logoUrl": "Logo link", "logoHint": "Paste a link to your logo image. File upload is coming soon.",
+    "invoiceDefaults": "Invoice defaults", "currency": "Currency", "prefix": "Invoice number prefix",
+    "prefixHint": "INV gives INV-0001, INV-0002…", "taxLabel": "Tax name", "taxLabelHint": "GST, VAT, Sales tax…",
+    "taxId": "Your tax ID", "taxIdHint": "Your GSTIN or VAT number", "defaultTax": "Default tax %",
+    "dueDays": "Payment due after (days)", "paymentDetails": "Payment details",
+    "paymentHint": "Bank account, IFSC, UPI ID. Shown on invoices under “How to pay”.",
+    "defaultNotes": "Default invoice notes", "saved": "Settings saved"
+  },
+  "billing": {
+    "title": "Your plan", "planFree": "Free", "planPro": "Pro", "current": "Current plan", "perMonth": "/month",
+    "usage": "{{used}} of {{limit}} invoices used this month", "seePlans": "See plans",
+    "limitReached": "You’ve reached this month’s free invoice limit.", "upgrade": "Upgrade to Pro",
+    "comingSoon": "Payments coming soon", "renews": "Pro plan, renews around {{date}}",
+    "freeFeatures": ["3 invoices every month", "PDF download and share link", "Email invoices to clients"],
+    "proFeatures": ["Unlimited invoices", "No “created with” footer on invoices", "Everything in Free", "New features first"]
+  },
+  "public": { "invalidTitle": "This invoice link doesn’t work", "invalidText": "Ask the sender for a new link.", "from": "Invoice from {{name}}" },
+  "notFound": { "title": "Page not found", "text": "The page you’re looking for doesn’t exist.", "back": "Go home" }
+}

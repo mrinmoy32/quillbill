@@ -1,0 +1,22 @@
+{
+  "_readme": "SINGLE SOURCE OF TRUTH for the product's identity. Change values here and rebuild; nothing else in the repo hardcodes the name. See docs/BRANDING.md",
+  "name": "Quillbill",
+  "legalName": "Quillbill Technologies Pvt Ltd",
+  "tagline": "Invoices in under a minute.",
+  "description": "Simple invoicing for small businesses. Create, send and track invoices without the clutter.",
+  "domain": "quillbill.example",
+  "supportEmail": "support@quillbill.example",
+  "colors": {
+    "primary": "#2540D9",
+    "accent": "#F2A900"
+  },
+  "fonts": {
+    "display": "Bricolage Grotesque",
+    "body": "Instrument Sans"
+  },
+  "logo": {
+    "mark": "/brand/logo-mark.svg",
+    "markText": "Q"
+  },
+  "pdfFooter": "Created with {name}"
+}
