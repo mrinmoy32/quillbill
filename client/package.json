@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.20.0",
+    "@clerk/react": "^6.19.4",
     "@tanstack/react-query": "^5.62.0",
     "i18next": "^23.16.8",
     "lucide-react": "^0.468.0",

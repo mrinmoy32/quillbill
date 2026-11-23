@@ -2,6 +2,6 @@
 // The Clerk *publishable* key is designed to be public (it only identifies your Clerk app).
 export default {
   apiBaseUrl: 'http://localhost:8000/api/v1',
-  clerkPublishableKey: 'pk_test_REPLACE_WITH_YOUR_DEV_CLERK_KEY',
+  clerkPublishableKey: 'pk_test_c3R1bm5pbmctY295b3RlLTQyMTEuY2xlcmsuYWNjb3VudHMuZGV2JA',
   defaultLocale: 'en',
 }

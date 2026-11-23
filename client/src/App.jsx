@@ -1,4 +1,4 @@
-import { RedirectToSignIn, SignedIn, SignedOut } from '@clerk/clerk-react'
+import { RedirectToSignIn, Show } from '@clerk/react'
 import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { Spinner } from '@/components/ui'
@@ -13,10 +13,10 @@ const NotFoundPage = lazy(() => import('@/features/public/NotFoundPage'))
 function RequireLogin({ children }) {
   return (
     <>
-      <SignedIn>{children}</SignedIn>
-      <SignedOut>
+      <Show when="signed-in">{children}</Show>
+      <Show when="signed-out">
         <RedirectToSignIn />
-      </SignedOut>
+      </Show>
     </>
   )
 }

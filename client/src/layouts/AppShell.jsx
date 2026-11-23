@@ -1,4 +1,4 @@
-import { UserButton } from '@clerk/clerk-react'
+import { UserButton } from '@clerk/react'
 import { Plus } from 'lucide-react'
 import { Suspense } from 'react'
 import { useTranslation } from 'react-i18next'

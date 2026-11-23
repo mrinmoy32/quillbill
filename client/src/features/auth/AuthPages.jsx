@@ -1,4 +1,4 @@
-import { SignIn, SignUp } from '@clerk/clerk-react'
+import { SignIn, SignUp } from '@clerk/react'
 import { useTranslation } from 'react-i18next'
 import BrandMark from '@/components/BrandMark'
 import { brand } from '@/config/brand'
